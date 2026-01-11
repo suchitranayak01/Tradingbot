@@ -1,0 +1,24 @@
+# Angel One API Configuration Template
+# Copy this file to config.yaml and fill in your details
+# NEVER commit config.yaml to git
+
+angelone:
+  api_key: "YOUR_API_KEY_HERE"
+  client_id: "YOUR_CLIENT_ID_HERE"
+  password: "YOUR_PASSWORD_HERE"
+  totp_secret: "YOUR_TOTP_SECRET_HERE"  # Optional, for TOTP-based login
+
+trading:
+  # Symbol format: NIFTY, BANKNIFTY, etc.
+  underlying_symbol: "NIFTY"
+  exchange: "NFO"  # NFO for options, NSE for equity
+  
+  # Lot size for options trading
+  lot_size: 50
+  
+  # Risk parameters
+  max_loss_per_trade: 5000  # in INR
+  max_open_positions: 2
+  
+  # Execution mode
+  dry_run: true  # Set to false to execute real orders
