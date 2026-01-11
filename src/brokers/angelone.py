@@ -3,12 +3,6 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 import pyotp
 
-try:
-    from SmartApi.smartConnect import SmartConnect
-except ImportError:
-    # Fallback for different package structure
-    from smartapi.smartConnect import SmartConnect
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,13 +20,26 @@ class AngelOneClient:
         self.client_id = client_id
         self.password = password
         self.totp_secret = totp_secret
-        self.client: Optional[SmartConnect] = None
+        self.client: Optional[Any] = None
         self.session_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
         
     def login(self) -> bool:
         """Login to Angel One and establish session."""
         try:
+            # Lazy import SmartConnect to avoid import errors in dry-run environments
+            SmartConnect = None
+            try:
+                from SmartApi.smartConnect import SmartConnect as _SC
+                SmartConnect = _SC
+            except ImportError:
+                try:
+                    from smartapi.smartConnect import SmartConnect as _SC
+                    SmartConnect = _SC
+                except ImportError:
+                    logger.error("SmartApi SmartConnect not installed. Please install smartapi/SmartApi package.")
+                    return False
+
             self.client = SmartConnect(api_key=self.api_key)
             
             # Generate TOTP if secret is provided
@@ -59,6 +66,26 @@ class AngelOneClient:
         except Exception as e:
             logger.error(f"Login exception: {e}")
             return False
+
+    def search_scrip(self, exchange: str, query: str) -> Optional[list]:
+        """Search scrips to resolve tokens and tradingsymbols."""
+        try:
+            if not self.client:
+                logger.error("Client not initialized; call login() first")
+                return None
+            # Support both 'searchScrip' and potential lowercase variants
+            search_fn = getattr(self.client, "searchScrip", None) or getattr(self.client, "search_scrip", None)
+            if not search_fn:
+                logger.error("searchScrip API not available in SmartAPI client")
+                return None
+            resp = search_fn(exchange=exchange, search=query)
+            if resp and resp.get("status"):
+                return resp.get("data") or []
+            logger.error(f"searchScrip failed: {resp.get('message', 'Unknown error') if isinstance(resp, dict) else resp}")
+            return None
+        except Exception as e:
+            logger.error(f"Error searching scrip: {e}")
+            return None
     
     def get_ltp(self, exchange: str, symbol: str, token: str) -> Optional[float]:
         """Get last traded price for a symbol."""

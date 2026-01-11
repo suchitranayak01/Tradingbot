@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.strategies.non_directional_strangle import NonDirectionalStrangleStrategy, Signal
 from src.brokers.angelone import AngelOneClient
+from src.brokers.kotak_neo import KotakNeoClient
 from src.execution.order_manager import OrderManager
 from src.data.models import Candle, OIData, FuturesOI
 
@@ -44,14 +45,29 @@ st.sidebar.title("⚙️ Configuration")
 config_path = Path("config.yaml")
 if config_path.exists():
     with open(config_path) as f:
-        config = yaml.safe_load(f)
+        config = yaml.safe_load(f) or {}
+        # Ensure all keys exist
+        if 'angelone' not in config:
+            config['angelone'] = {}
+        if 'kotak_neo' not in config:
+            config['kotak_neo'] = {}
+        if 'trading' not in config:
+            config['trading'] = {}
 else:
     config = {
+        'broker': 'angelone',
         'angelone': {
             'api_key': '',
             'client_id': '',
             'password': '',
             'totp_secret': ''
+        },
+        'kotak_neo': {
+            'api_key': '',
+            'user_id': '',
+            'password': '',
+            'consumer_key': '',
+            'consumer_secret': ''
         },
         'trading': {
             'underlying_symbol': 'NIFTY',
@@ -62,17 +78,45 @@ else:
         }
     }
 
+# Broker Selection
+st.sidebar.subheader("🏦 Broker Selection")
+broker_choice = st.sidebar.radio("Select Broker", ["Angel One", "Kotak Neo"], 
+                                  index=0 if config.get('broker', 'angelone') == 'angelone' else 1)
+config['broker'] = 'angelone' if broker_choice == 'Angel One' else 'kotak_neo'
+
 # Angel One Credentials
-st.sidebar.subheader("🔐 Angel One Credentials")
-api_key = st.sidebar.text_input("API Key", value=config['angelone'].get('api_key', ''), type="password")
-client_id = st.sidebar.text_input("Client ID", value=config['angelone'].get('client_id', ''))
-password = st.sidebar.text_input("Password", value=config['angelone'].get('password', ''), type="password")
-totp_secret = st.sidebar.text_input("TOTP Secret (Optional)", value=config['angelone'].get('totp_secret', ''), type="password")
+if broker_choice == "Angel One":
+    st.sidebar.subheader("🔐 Angel One Credentials")
+    api_key = st.sidebar.text_input("API Key", value=config['angelone'].get('api_key', ''), type="password")
+    client_id = st.sidebar.text_input("Client ID", value=config['angelone'].get('client_id', ''))
+    password = st.sidebar.text_input("Password", value=config['angelone'].get('password', ''), type="password")
+    totp_secret = st.sidebar.text_input("TOTP Secret (Optional)", value=config['angelone'].get('totp_secret', ''), type="password")
+    broker_credentials = {
+        'api_key': api_key,
+        'client_id': client_id,
+        'password': password,
+        'totp_secret': totp_secret
+    }
+else:  # Kotak Neo
+    st.sidebar.subheader("🔐 Kotak Neo Credentials")
+    api_key = st.sidebar.text_input("API Key", value=config['kotak_neo'].get('api_key', ''), type="password")
+    user_id = st.sidebar.text_input("User ID", value=config['kotak_neo'].get('user_id', ''))
+    password = st.sidebar.text_input("Password", value=config['kotak_neo'].get('password', ''), type="password")
+    consumer_key = st.sidebar.text_input("Consumer Key", value=config['kotak_neo'].get('consumer_key', ''), type="password")
+    consumer_secret = st.sidebar.text_input("Consumer Secret", value=config['kotak_neo'].get('consumer_secret', ''), type="password")
+    broker_credentials = {
+        'api_key': api_key,
+        'user_id': user_id,
+        'password': password,
+        'consumer_key': consumer_key,
+        'consumer_secret': consumer_secret
+    }
 
 # Trading Parameters
 st.sidebar.subheader("📊 Trading Parameters")
-underlying = st.sidebar.selectbox("Underlying", ["NIFTY", "BANKNIFTY", "FINNIFTY"], 
-                                   index=["NIFTY", "BANKNIFTY", "FINNIFTY"].index(config['trading'].get('underlying_symbol', 'NIFTY')))
+underlyings = ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX", "GOLD", "GOLDM", "SILVER", "SILVERM"]
+underlying = st.sidebar.selectbox("Underlying", underlyings, 
+                                   index=underlyings.index(config['trading'].get('underlying_symbol', 'NIFTY')))
 exchange = st.sidebar.selectbox("Exchange", ["NFO", "NSE"], 
                                 index=["NFO", "NSE"].index(config['trading'].get('exchange', 'NFO')))
 lot_size = st.sidebar.number_input("Lot Size", min_value=1, max_value=1000, value=config['trading'].get('lot_size', 50))
@@ -82,11 +126,19 @@ dry_run = st.sidebar.checkbox("Dry Run Mode (No Real Orders)", value=config['tra
 # Save config button
 if st.sidebar.button("💾 Save Configuration"):
     new_config = {
+        'broker': config['broker'],
         'angelone': {
-            'api_key': api_key,
-            'client_id': client_id,
-            'password': password,
-            'totp_secret': totp_secret
+            'api_key': broker_credentials.get('api_key', '') if broker_choice == "Angel One" else config['angelone'].get('api_key', ''),
+            'client_id': broker_credentials.get('client_id', '') if broker_choice == "Angel One" else config['angelone'].get('client_id', ''),
+            'password': broker_credentials.get('password', '') if broker_choice == "Angel One" else config['angelone'].get('password', ''),
+            'totp_secret': broker_credentials.get('totp_secret', '') if broker_choice == "Angel One" else config['angelone'].get('totp_secret', '')
+        },
+        'kotak_neo': {
+            'api_key': broker_credentials.get('api_key', '') if broker_choice == "Kotak Neo" else config['kotak_neo'].get('api_key', ''),
+            'user_id': broker_credentials.get('user_id', '') if broker_choice == "Kotak Neo" else config['kotak_neo'].get('user_id', ''),
+            'password': broker_credentials.get('password', '') if broker_choice == "Kotak Neo" else config['kotak_neo'].get('password', ''),
+            'consumer_key': broker_credentials.get('consumer_key', '') if broker_choice == "Kotak Neo" else config['kotak_neo'].get('consumer_key', ''),
+            'consumer_secret': broker_credentials.get('consumer_secret', '') if broker_choice == "Kotak Neo" else config['kotak_neo'].get('consumer_secret', '')
         },
         'trading': {
             'underlying_symbol': underlying,
@@ -102,25 +154,70 @@ if st.sidebar.button("💾 Save Configuration"):
 
 # Test Connection
 st.sidebar.subheader("🔌 Connection")
-if st.sidebar.button("Test Angel One Connection"):
-    if not api_key or not client_id or not password:
-        st.sidebar.error("❌ Please fill in all credentials")
-    elif api_key.startswith("DEMO_"):
-        st.sidebar.warning("⚠️ Using demo credentials - cannot connect to real broker")
-    else:
-        with st.sidebar.spinner("Connecting..."):
-            try:
-                broker = AngelOneClient(api_key, client_id, password, totp_secret)
-                if broker.login():
-                    st.sidebar.success("✅ Connected to Angel One!")
-                    st.session_state.broker_connected = True
-                    broker.logout()
+if st.sidebar.button(f"Test {broker_choice} Connection"):
+    with st.spinner(f"Connecting to {broker_choice}..."):
+        try:
+            if broker_choice == "Angel One":
+                if not broker_credentials.get('api_key') or not broker_credentials.get('client_id') or not broker_credentials.get('password'):
+                    st.sidebar.error("❌ Please fill in all credentials")
+                elif broker_credentials.get('api_key', '').startswith("DEMO_"):
+                    st.sidebar.warning("⚠️ Using demo credentials - cannot connect to real broker")
                 else:
-                    st.sidebar.error("❌ Connection failed - check credentials")
-                    st.session_state.broker_connected = False
-            except Exception as e:
-                st.sidebar.error(f"❌ Error: {str(e)}")
-                st.session_state.broker_connected = False
+                    st.info(f"🔍 Testing with Client ID: {broker_credentials.get('client_id')}")
+                    st.info(f"🔍 API Key length: {len(broker_credentials.get('api_key', ''))} chars")
+                    st.info(f"🔍 TOTP Secret: {'Set' if broker_credentials.get('totp_secret') else 'Not set'}")
+                    
+                    broker = AngelOneClient(
+                        broker_credentials.get('api_key'),
+                        broker_credentials.get('client_id'),
+                        broker_credentials.get('password'),
+                        broker_credentials.get('totp_secret') if broker_credentials.get('totp_secret') else None
+                    )
+                    login_result = broker.login()
+                    
+                    if login_result:
+                        st.sidebar.success("✅ Connected to Angel One!")
+                        st.session_state.broker_connected = True
+                    else:
+                        st.sidebar.error("❌ Connection failed")
+                        st.error("Possible issues:")
+                        st.error("1. Verify API Key from https://smartapi.angelbroking.com/")
+                        st.error("2. Check Client ID (your Angel One login)")
+                        st.error("3. Verify password is correct")
+                        st.error("4. If using TOTP, check the secret key")
+                        st.session_state.broker_connected = False
+            else:  # Kotak Neo
+                if not all([broker_credentials.get('api_key'), broker_credentials.get('user_id'), 
+                           broker_credentials.get('password'), broker_credentials.get('consumer_key'),
+                           broker_credentials.get('consumer_secret')]):
+                    st.sidebar.error("❌ Please fill in all credentials")
+                else:
+                    st.info(f"🔍 Testing with User ID: {broker_credentials.get('user_id')}")
+                    st.info(f"🔍 API Key length: {len(broker_credentials.get('api_key', ''))} chars")
+                    
+                    broker = KotakNeoClient(
+                        broker_credentials.get('api_key'),
+                        broker_credentials.get('user_id'),
+                        broker_credentials.get('password'),
+                        broker_credentials.get('consumer_key'),
+                        broker_credentials.get('consumer_secret')
+                    )
+                    login_result = broker.login()
+                    
+                    if login_result:
+                        st.sidebar.success("✅ Connected to Kotak Neo!")
+                        st.session_state.broker_connected = True
+                    else:
+                        st.sidebar.error("❌ Connection failed")
+                        st.error("Possible issues:")
+                        st.error("1. Verify API Key and credentials")
+                        st.error("2. Check Consumer Key and Consumer Secret")
+                        st.error("3. Verify user ID and password")
+                        st.session_state.broker_connected = False
+        except Exception as e:
+            st.sidebar.error(f"❌ Error: {str(e)}")
+            st.error(f"Full error: {repr(e)}")
+            st.session_state.broker_connected = False
 
 # Main content
 st.title("📈 Non-Directional Strangle Trading Bot")
@@ -151,11 +248,15 @@ col_start, col_stop = st.columns(2)
 
 with col_start:
     if st.button("▶️ START BOT", disabled=st.session_state.bot_running, use_container_width=True):
-        if not api_key or not client_id or not password:
-            st.error("❌ Please configure Angel One credentials first")
+        required_fields = {
+            'Angel One': ['api_key', 'client_id', 'password'],
+            'Kotak Neo': ['api_key', 'user_id', 'password', 'consumer_key', 'consumer_secret']
+        }
+        if not all(broker_credentials.get(field) for field in required_fields[broker_choice]):
+            st.error(f"❌ Please configure {broker_choice} credentials first")
         else:
             st.session_state.bot_running = True
-            st.session_state.logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] Bot started")
+            st.session_state.logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] Bot started with {broker_choice}")
             st.rerun()
 
 with col_stop:

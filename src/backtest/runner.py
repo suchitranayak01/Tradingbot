@@ -136,6 +136,7 @@ def main():
             exchange=trading_config.get('exchange', 'NFO'),
             lot_size=trading_config.get('lot_size', 50),
             max_loss_per_trade=trading_config.get('max_loss_per_trade', 5000),
+            capital=trading_config.get('capital', 1000000),  # Default 10 lakhs
             dry_run=args.dry_run or trading_config.get('dry_run', True),
         )
 

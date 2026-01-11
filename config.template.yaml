@@ -20,5 +20,15 @@ trading:
   max_loss_per_trade: 5000  # in INR
   max_open_positions: 2
   
+  # Capital deployed for trading (used for SL calculation as 1%)
+  capital: 1000000  # 10 lakhs
+  
   # Execution mode
   dry_run: true  # Set to false to execute real orders
+  
+  # Product type
+  product_type: "CARRYFORWARD"  # INTRADAY or CARRYFORWARD
+
+  # Optional hedging (buy further OTM protection legs)
+  enable_hedge: false
+  hedge_distance: 100  # points away from short strikes

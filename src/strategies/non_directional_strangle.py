@@ -13,10 +13,12 @@ from src.core.oi_analysis import (
 @dataclass
 class Signal:
     timestamp: str
-    action: str  # "sell_strangle" | "no_trade"
+    action: str  # "sell_iron_condor" | "no_trade"
     context: Dict[str, str]
     call_distance: Optional[int] = None
     put_distance: Optional[int] = None
+    hedge_distance: int = 900  # Distance for protective buy legs
+    capital_deployed: float = 0.0  # Estimated capital for SL calculation
 
 
 class NonDirectionalStrangleStrategy:
@@ -61,24 +63,26 @@ class NonDirectionalStrangleStrategy:
                 if call_rising and not fut_dropping:
                     return Signal(
                         timestamp=ts,
-                        action="sell_strangle",
+                        action="sell_iron_condor",
                         context={
                             "reason": "Double-top + rising ATM call OI",
                             "situation": "2",
                         },
                         call_distance=100,
                         put_distance=100,
+                        hedge_distance=900,
                     )
                 if call_rising and fut_dropping:
                     return Signal(
                         timestamp=ts,
-                        action="sell_strangle",
+                        action="sell_iron_condor",
                         context={
                             "reason": "Double-top + rising ATM call OI + futures OI drop (long unwinding)",
                             "situation": "3",
                         },
                         call_distance=75,
                         put_distance=125,
+                        hedge_distance=900,
                     )
             # If no pattern or confirmations, avoid trade
             return None
@@ -98,24 +102,26 @@ class NonDirectionalStrangleStrategy:
                 if put_rising and not fut_dropping:
                     return Signal(
                         timestamp=ts,
-                        action="sell_strangle",
+                        action="sell_iron_condor",
                         context={
                             "reason": "Double-bottom + rising ATM put OI",
                             "situation": "2B",
                         },
                         call_distance=100,
                         put_distance=100,
+                        hedge_distance=900,
                     )
                 if put_rising and fut_dropping:
                     return Signal(
                         timestamp=ts,
-                        action="sell_strangle",
+                        action="sell_iron_condor",
                         context={
                             "reason": "Double-bottom + rising ATM put OI + futures OI drop",
                             "situation": "3B",
                         },
                         call_distance=125,
                         put_distance=75,
+                        hedge_distance=900,
                     )
             return None
 
