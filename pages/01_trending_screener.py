@@ -280,5 +280,5 @@ def main():
                             st.write(f"**{criterion}:** {status}")
 
 
-if __name__ == "__main__":
-    main()
+# Call main function directly for Streamlit multi-page apps
+main()
