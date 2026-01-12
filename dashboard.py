@@ -270,6 +270,26 @@ with screener_col2:
         unsafe_allow_html=True
     )
 
+# Options Analytics
+st.markdown("### 📊 Options Analytics")
+options_col1, options_col2, options_col3 = st.columns(3)
+
+with options_col1:
+    st.markdown(
+        """
+        <div style="padding: 20px; background-color: #1a3a52; border-radius: 10px;">
+            <h4>📊 Straddle & VIX</h4>
+            <p>ATM straddle analysis, IV curves, PCR, VIX trends & trading strategies.</p>
+            <a href="pages/03_options_analytics.py" target="_blank">
+                <button style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Open Analytics
+                </button>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 st.markdown("---")
 
 # Status row
