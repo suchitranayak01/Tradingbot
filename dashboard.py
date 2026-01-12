@@ -41,6 +41,18 @@ if 'broker_connected' not in st.session_state:
 # Sidebar - Configuration
 st.sidebar.title("⚙️ Configuration")
 
+# Add navigation section
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🔍 Stock Screeners")
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("📈 Trending", use_container_width=True):
+        st.switch_page("pages/01_trending_screener.py")
+with col2:
+    if st.button("🔝 ATH Finder", use_container_width=True):
+        st.switch_page("pages/02_ath_screener.py")
+st.sidebar.markdown("---")
+
 # Load existing config
 config_path = Path("config.yaml")
 if config_path.exists():

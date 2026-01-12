@@ -2,12 +2,19 @@ import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
 import pyotp
+import time
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 
 
 class AngelOneClient:
     """Angel One SmartAPI client wrapper for order execution and market data."""
+    
+    # Rate limiting: 2 requests per second (0.5 seconds between requests)
+    _rate_limit_delay = 0.5  # seconds between API calls
+    _last_request_time = 0
+    _rate_limit_lock = Lock()
     
     def __init__(
         self,
@@ -23,6 +30,19 @@ class AngelOneClient:
         self.client: Optional[Any] = None
         self.session_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
+    
+    def _rate_limit(self):
+        """Enforce rate limiting of 2 requests per second."""
+        with self._rate_limit_lock:
+            current_time = time.time()
+            time_since_last_request = current_time - AngelOneClient._last_request_time
+            
+            if time_since_last_request < self._rate_limit_delay:
+                sleep_time = self._rate_limit_delay - time_since_last_request
+                logger.debug(f"Rate limiting: sleeping for {sleep_time:.3f}s")
+                time.sleep(sleep_time)
+            
+            AngelOneClient._last_request_time = time.time()
         
     def login(self) -> bool:
         """Login to Angel One and establish session."""
@@ -73,6 +93,9 @@ class AngelOneClient:
             if not self.client:
                 logger.error("Client not initialized; call login() first")
                 return None
+            
+            self._rate_limit()  # Apply rate limiting
+            
             # Support both 'searchScrip' and potential lowercase variants
             search_fn = getattr(self.client, "searchScrip", None) or getattr(self.client, "search_scrip", None)
             if not search_fn:
@@ -90,6 +113,8 @@ class AngelOneClient:
     def get_ltp(self, exchange: str, symbol: str, token: str) -> Optional[float]:
         """Get last traded price for a symbol."""
         try:
+            self._rate_limit()  # Apply rate limiting
+            
             data = self.client.ltpData(exchange, symbol, token)
             if data and data['status']:
                 return float(data['data']['ltp'])
@@ -125,6 +150,8 @@ class AngelOneClient:
         Returns order_id if successful, None otherwise.
         """
         try:
+            self._rate_limit()  # Apply rate limiting
+            
             order_params = {
                 "variety": "NORMAL",
                 "tradingsymbol": symbol,
@@ -157,6 +184,8 @@ class AngelOneClient:
     def get_order_book(self) -> Optional[list]:
         """Fetch current order book."""
         try:
+            self._rate_limit()  # Apply rate limiting
+            
             response = self.client.orderBook()
             if response and response.get('status'):
                 return response['data']
@@ -168,6 +197,8 @@ class AngelOneClient:
     def get_positions(self) -> Optional[Dict]:
         """Fetch current positions."""
         try:
+            self._rate_limit()  # Apply rate limiting
+            
             response = self.client.position()
             if response and response.get('status'):
                 return response['data']
