@@ -44,13 +44,12 @@ st.sidebar.title("⚙️ Configuration")
 # Add navigation section
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🔍 Stock Screeners")
-col1, col2 = st.sidebar.columns(2)
-with col1:
-    if st.button("📈 Trending", use_container_width=True):
-        st.switch_page("pages/01_trending_screener.py")
-with col2:
-    if st.button("🔝 ATH Finder", use_container_width=True):
-        st.switch_page("pages/02_ath_screener.py")
+st.sidebar.markdown(
+    """
+    - **📈 [Trending Stocks](pages/01_trending_screener.py)** - High volume trending stocks
+    - **🔝 [ATH Finder](pages/02_ath_screener.py)** - Stocks near all-time highs
+    """
+)
 st.sidebar.markdown("---")
 
 # Load existing config
@@ -233,6 +232,44 @@ if st.sidebar.button(f"Test {broker_choice} Connection"):
 
 # Main content
 st.title("📈 Non-Directional Strangle Trading Bot")
+st.markdown("---")
+
+# Stock Screeners Section
+st.markdown("### 🔍 Stock Screeners")
+screener_col1, screener_col2 = st.columns(2)
+
+with screener_col1:
+    st.markdown(
+        """
+        <div style="padding: 20px; background-color: #1f4788; border-radius: 10px;">
+            <h4>📈 Trending Stocks Screener</h4>
+            <p>Identify high-momentum stocks with above-average volume for intraday trading.</p>
+            <a href="pages/01_trending_screener.py" target="_blank">
+                <button style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Open Screener
+                </button>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with screener_col2:
+    st.markdown(
+        """
+        <div style="padding: 20px; background-color: #1f4788; border-radius: 10px;">
+            <h4>🔝 All-Time High (ATH) Finder</h4>
+            <p>Find stocks trading near or at their all-time highs with strong volume confirmation.</p>
+            <a href="pages/02_ath_screener.py" target="_blank">
+                <button style="padding: 10px 20px; background-color: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Open Screener
+                </button>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 st.markdown("---")
 
 # Status row
