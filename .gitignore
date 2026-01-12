@@ -13,6 +13,10 @@ env/
 config.yaml
 .env
 *.log
+.streamlit/secrets.toml
+
+# Logs
+logs/
 
 # IDE
 .vscode/

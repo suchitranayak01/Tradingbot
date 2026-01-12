@@ -31,4 +31,4 @@ echo ""
 echo "Press Ctrl+C to stop the dashboard"
 echo ""
 
-streamlit run dashboard.py
+python3 -m streamlit run dashboard.py
