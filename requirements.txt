@@ -10,3 +10,6 @@ streamlit
 plotly
 APScheduler
 flet
+pytest
+pytest-cov
+SQLAlchemy
