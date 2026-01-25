@@ -5,6 +5,7 @@ import math
 
 from src.brokers.angelone import AngelOneClient
 from src.strategies.non_directional_strangle import Signal
+from src.database.db_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class OrderManager:
         max_loss_per_trade: float,
         capital: float = 1000000,  # Total trading capital
         dry_run: bool = True,
+        db_manager: Optional[DatabaseManager] = None,
     ):
         self.broker = broker
         self.underlying_symbol = underlying_symbol
@@ -30,6 +32,7 @@ class OrderManager:
         self.capital = capital  # Total capital for SL calculation
         self.dry_run = dry_run
         self.active_positions: List[Dict] = []
+        self.db = db_manager or DatabaseManager()  # Initialize database
         
     def execute_signal(self, signal: Signal, current_price: float) -> bool:
         """Execute orders based on strategy signal.
@@ -42,6 +45,18 @@ class OrderManager:
         
         SL is capped at 1% of total capital deployed.
         """
+        # Save signal to database
+        signal_id = self.db.save_signal(
+            timestamp=signal.timestamp,
+            action=signal.action,
+            situation=signal.context.get('situation', ''),
+            reason=signal.context.get('reason', ''),
+            call_distance=signal.call_distance,
+            put_distance=signal.put_distance,
+            hedge_distance=signal.hedge_distance,
+            current_price=current_price
+        )
+        
         if signal.action == "no_trade":
             logger.info(f"Signal is no_trade: {signal.context.get('reason')}")
             return False
