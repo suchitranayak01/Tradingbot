@@ -9,6 +9,7 @@ from src.data.models import Candle, OIData, FuturesOI
 from src.strategies.non_directional_strangle import NonDirectionalStrangleStrategy
 from src.brokers.angelone import AngelOneClient
 from src.execution.order_manager import OrderManager
+from src.utils.config_validator import ConfigValidator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -98,6 +99,13 @@ def main():
     order_manager = None
     if args.execute:
         config = load_config(args.config)
+        
+        # Validate configuration
+        try:
+            ConfigValidator.validate_and_raise(config)
+        except Exception as e:
+            logger.error(f"Configuration validation failed: {e}")
+            sys.exit(1)
         
         # Check if using demo credentials
         angel_config = config.get('angelone', {})
